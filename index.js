@@ -1,113 +1,86 @@
-// const ddd = require('node-html-parser')
-// const parse = ddd.parse
-// const root = parse('<ul id="list"><li>Hello World</li></ul>');
+// console.log(process.argv)
+const travelFiles = require('./look')
+const fileParser = require('node-html-parser').parse
+var css2json = require('css2json');
+const less = require('less')
+const minFont = require('./font')
 
-// console.log(root.firstChild.structure);
-// ul#list
-//   li
-//     #text
+function findFont (lessStyleStr, lessVars, fontName, cb) {
+  console.log('finding font: ' + fontName)
+  let rStr = lessVars + lessStyleStr
+  less.render(rStr)
+    .then(
+      function (output) {
+        let cssJson = css2json(output.css)
+        // console.log(cssJson)
+        for (let key in cssJson) {
+          let item = cssJson[key]
+          if (item['font-family'] && item['font-family'] == fontName) {
+            cb(key)
+          }
+        }
+      },
+      function (error) {
+        console.log(error)
+      }
+    );
+}
+var collectTextStr = ''
 
-// console.log(root.querySelector('li'));
-// { tagName: 'ul',
-//   rawAttrs: 'id="list"',
-//   childNodes:
-//    [ { tagName: 'li',
-//        rawAttrs: '',
-//        childNodes: [Object],
-//        classNames: [] } ],
-//   id: 'list',
-//   classNames: [] }
-// console.log(root.toString());
-// <ul id="list"><li>Hello World</li></ul>
-// root.set_content('<li>Hello World</li>');
-// root.toString();	// <li>Hello World</li>
-
-
-// var css2json = require('css2json');
-// const less = require('less')
-//
-// var lessStr = `
-// @theme-color: #fff;
-//   .list-box {
-//     margin: 0 15px;
-//     .item {
-//       background: #fff;
-//       border-radius: 10px;
-//       margin-bottom: 12px;
-//       padding: 10px 0 14px;
-//       .item-info {
-//         padding: 0 15px 0 6.5px;
-//       }
-//       .item-logo {
-//         width: 37px;
-//         height: 37px;
-//         float: left;
-//         margin-right: 6px;
-//       }
-//       .item-name {
-//         line-height: 37px;
-//         color: @theme-color;
-//         font-size: 16px;
-//         font-weight: 600;
-//       }
-//       .item-status {
-//         font-size: 15px;
-//         font-weight: 600;
-//         &.s1 {
-//           color: #FF9E2B;
-//         }
-//         &.s2 {
-//           color: @theme-color;
-//         }
-//         &.s3 {
-//           color: #469F4C;
-//         }
-//         &.s4 {
-//           color: #999999;
-//         }
-//       }
-//       .item-des {
-//         color: #666666;
-//         font-size: 13px;
-//         line-height: 1em;
-//         margin-top: 12px;
-//         padding: 0 15px;
-//         span {
-//           color: #111;
-//           font-weight: 600;
-//         }
-//       }
-//     }
-//   }
-// `
-
-// var json = le(css);
-//
-// console.log(json)
-// less.render(lessStr)
-//   .then(
-//     function(output) {
-//       console.log(output, '...........................////////////////////////////////////')
-//       let css = css2json(output.css)
-//       console.log(css)
-//     },
-//     function(error) {
-//       console.log(error)
-//     }
-//   );
-
-
-// console.log(le)
-
-const mapDir = require('./look')
-mapDir(
-  './src',
-  function(file) {
-    console.log(file)
-    // console.log('TCL: file', file.toString())
-    // 读取文件后的处理
-  },
-  function() {
-    // console.log('xxx文件目录遍历完了')
+function collectText (node, cb) {
+  function loop (root) {
+    if (root.rawText) {
+      collectTextStr += root.rawText
+      return
+    } else if (root.childNodes) {
+      root.childNodes.forEach(c => loop(c))
+    }
   }
-)
+  loop(node)
+}
+
+// let options = {
+//   fontName: 'new-font',
+//   fontFilePath: 'fonts/font2.ttf',
+//   basePath: './src',
+//   lessVarDir: './src/assets',
+//   showCollectText: true
+// }
+
+function sss (options) {
+  let lessVars = ''
+  if (options.lessVarDir) {
+    travelFiles(options.lessVarDir, '.less', content => {
+      lessVars = lessVars + '\r\n' + content
+    })
+  }
+  travelFiles(options.basePath, '.vue', content => {
+    let reContent = content.replace(/<style/g, '<new-style')
+      .replace(/<\/style>/g, '</new-style>')
+    let nodeTree = fileParser(reContent)
+    nodeTree.childNodes.forEach(node => {
+      if (node.tagName == 'new-style') {
+        findFont(node.childNodes[0].rawText, lessVars, options.fontName, key => {
+          let nodes = nodeTree.querySelectorAll(key)
+          if (nodes.length > 0) {
+            nodes.forEach(n => {
+              collectText(n)
+            })
+            if (collectTextStr) {
+              let rText = collectTextStr.replace(/\r/g, '').replace(/\n/g, '').replace(/ /g, '')
+              var sText  =  [].filter.call(rText,(s,i,o)=>o.indexOf(s)==i).join('')
+              if (options.showCollectText) {
+                console.log(`find text:\n\t${sText}`)
+              }
+              minFont(sText, options.fontFilePath)
+            }
+          }
+        })
+      }
+    })
+  })
+}
+
+// sss(options)
+
+module.exports = sss

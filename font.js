@@ -1,19 +1,38 @@
 var Fontmin = require('fontmin');
+var path = require('path')
 var rename = require('gulp-rename');
 var fs = require('fs')
 
-if (!fs.existsSync('fonts/backup-font2.ttf')) {
-  fs.writeFileSync('fonts/backup-font2.ttf', fs.readFileSync('fonts/font2.ttf'));
+function minFont (text, fontFilePath) {
+  console.log('minfont ing......')
+  let fileName = path.basename(fontFilePath)
+  let fileDir = fontFilePath.replace(fileName, '')
+  fileDir = fileDir.substr(0, fileDir.length - 1)
+  let backupFilePath = fontFilePath.replace(fileName, 'backup-' + fileName)
+
+  if (!fs.existsSync(backupFilePath)) {
+    fs.writeFileSync(backupFilePath, fs.readFileSync(fontFilePath))
+  }
+  if (fs.existsSync(fontFilePath)) {
+    fs.unlinkSync(fontFilePath)
+  }
+
+  var fontMin = new Fontmin()
+    .src(backupFilePath)
+    .dest(fileDir)
+    .use(rename(fileName))
+    .use(Fontmin.glyph({
+      text: text,
+      hinting: false         // keep ttf hint info (fpgm, prep, cvt). default = true
+    }));
+
+  fontMin.run((err, files) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    console.log('Done')
+  });
 }
 
-var fontMin = new Fontmin()
-  .src('fonts/backup-font2.ttf')
-  .dest('fonts')
-  .use(rename('font3.ttf'))
-  .use(Fontmin.glyph({
-    text: '天地玄黄 宇宙洪荒',
-    hinting: false         // keep ttf hint info (fpgm, prep, cvt). default = true
-  }));
-
-fontMin.run();
-
+module.exports = minFont
