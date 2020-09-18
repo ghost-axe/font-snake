@@ -1,4 +1,4 @@
-##font-snake
+##font-snake   
 扫描vue项目压缩字体文件
 - 安装font-snake  
 ```shell script
@@ -17,7 +17,7 @@ let options = {
 }
 sss(options)
 ```
-- package.json
+- 修改package.json
 ```json
 {
   "scripts": {
