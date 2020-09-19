@@ -1,10 +1,10 @@
-var Fontmin = require('fontmin');
-var path = require('path')
-var rename = require('gulp-rename');
-var fs = require('fs')
+const Fontmin = require('fontmin');
+const path = require('path')
+const rename = require('gulp-rename');
+const fs = require('fs')
 
 function minFont (text, fontFilePath) {
-  console.log('minfont ing......')
+  console.log('compressing......')
   let fileName = path.basename(fontFilePath)
   let fileDir = fontFilePath.replace(fileName, '')
   fileDir = fileDir.substr(0, fileDir.length - 1)
@@ -31,7 +31,9 @@ function minFont (text, fontFilePath) {
       console.error(err)
       return
     }
-    console.log('Done')
+    console.log("\033[1A\033[K\033[1A")
+    console.log("\033[40;34mcompress font finished\033[0m")
+    console.log("\n\033[42;30m DONE \033[40;32m " + "Compress font success\033[0m")
   });
 }
 

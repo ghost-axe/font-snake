@@ -1,30 +1,9 @@
-// console.log(process.argv)
-const travelFiles = require('./look')
+const travelFiles = require('./libs/look')
 const fileParser = require('node-html-parser').parse
-var css2json = require('css2json');
-const less = require('less')
-const minFont = require('./font')
+const minFont = require('./libs/font')
+const findFont = require('./libs/find')
+const bannerText = require('./libs/banner').bannerText1
 
-function findFont (lessStyleStr, lessVars, fontName, cb) {
-  console.log('finding font: ' + fontName)
-  let rStr = lessVars + lessStyleStr
-  less.render(rStr)
-    .then(
-      function (output) {
-        let cssJson = css2json(output.css)
-        // console.log(cssJson)
-        for (let key in cssJson) {
-          let item = cssJson[key]
-          if (item['font-family'] && item['font-family'] == fontName) {
-            cb(key)
-          }
-        }
-      },
-      function (error) {
-        console.log(error)
-      }
-    );
-}
 var collectTextStr = ''
 
 function collectText (node, cb) {
@@ -47,38 +26,56 @@ function collectText (node, cb) {
 //   showCollectText: true
 // }
 
-function sss (options) {
+async function sss (options) {
+  console.log("\033[2J")
+  console.log(bannerText)
+  let resText = ''
   let lessVars = ''
   if (options.lessVarDir) {
-    travelFiles(options.lessVarDir, '.less', content => {
-      lessVars = lessVars + '\r\n' + content
+    await travelFiles(options.lessVarDir, '.less', content => {
+      lessVars = lessVars + '\r\n' + content + '\r\n'
     })
   }
-  travelFiles(options.basePath, '.vue', content => {
-    let reContent = content.replace(/<style/g, '<new-style')
-      .replace(/<\/style>/g, '</new-style>')
-    let nodeTree = fileParser(reContent)
-    nodeTree.childNodes.forEach(node => {
-      if (node.tagName == 'new-style') {
-        findFont(node.childNodes[0].rawText, lessVars, options.fontName, key => {
+
+  await travelFiles(options.basePath, '.vue', content => {
+    async function f() {
+      let reContent = content.replace(/<style/g, '<new-style')
+        .replace(/<\/style>/g, '</new-style>')  // 替换style标签
+      let nodeTree = fileParser(reContent)
+      let styleText = ''
+      nodeTree.childNodes.forEach(node => {
+        if (node.tagName == 'new-style') {  // 处理style
+          styleText = node.childNodes[0].rawText
+        }
+      })
+      if (styleText) {
+        await findFont(styleText, lessVars, options.fontName, key => {
           let nodes = nodeTree.querySelectorAll(key)
           if (nodes.length > 0) {
             nodes.forEach(n => {
-              collectText(n)
+              collectText(n)  // 收集使用新字体的文字
             })
             if (collectTextStr) {
-              let rText = collectTextStr.replace(/\r/g, '').replace(/\n/g, '').replace(/ /g, '')
-              var sText  =  [].filter.call(rText,(s,i,o)=>o.indexOf(s)==i).join('')
-              if (options.showCollectText) {
-                console.log(`find text:\n\t${sText}`)
-              }
-              minFont(sText, options.fontFilePath)
+              resText += collectTextStr
+              // console.log(collectTextStr)
             }
           }
         })
       }
-    })
+    }
+    return f()
   })
+
+  console.log("\033[40;34mparse file finished\033[0m")
+
+  // 收集文字处理和去重
+  let rText = resText.replace(/\r/g, '').replace(/\n/g, '').replace(/ /g, '')
+  var sText  =  [].filter.call(rText,(s,i,o)=>o.indexOf(s)==i).join('')
+  if (options.showCollectText) {
+    console.log(`find text:\n\t${sText}`)
+  }
+  minFont(sText, options.fontFilePath)  // 压缩字体文件
+
 }
 
 // sss(options)
