@@ -2,7 +2,7 @@
   <div class="app-content" id="linkscard">
     测试
     <div class="share-icon1">
-      <div class="s">dkdkdkk零售价</div>
+      <div class="s">这个是css文件</div>
       <div class="dkdk">领导看了</div>
     </div>
     <div class="share-icon1">
@@ -14,15 +14,13 @@
   export default {
   }
 </script>
-<style lang="less" scoped>
+<style scoped>
   .share-icon1 {
     width: 90px;
     height: auto;
     display: block;
     margin: 0 auto;
     font-family: new-font;
-    color: @theme-color;
-    background-color: @bg-color;
   }
   .share-icon2 {
     width: 64px;

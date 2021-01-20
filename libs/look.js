@@ -1,8 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 
-async function travelFiles(fPath, ext, cb){
-  var filePath = path.resolve(fPath)
+async function travelFiles(basePath, ext, cb){
+  let filePath = path.resolve(basePath)
   let files = fs.readdirSync(filePath)
   if (files.length == 0) {
     console.log("\033[41;30m ERROR \033[40;31m No " + ext + " file\033[0m")
@@ -23,8 +23,7 @@ async function travelFiles(fPath, ext, cb){
           cb(content)
         }
       }
-    }
-    if(fileStat.isDirectory()){
+    } else if(fileStat.isDirectory()){
       await travelFiles(filedir, ext, cb)
     }
   }
