@@ -1,4 +1,5 @@
-##font-snake   2.0
+## font-snake 2.0
+
 扫描vue项目压缩字体文件
 - 安装font-snake  
 ```shell script
@@ -26,5 +27,7 @@ sss(options)
   }
 }
 ```
-
-
+- 运行
+```shell script
+npm run min-font
+```

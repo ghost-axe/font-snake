@@ -1,7 +1,7 @@
 <template>
   <div class="box">
     <div class="title">这个是stylus文件</div>
-    <div class="content">的风格和人家国会同意</div>
+    <div class="content">江上形容吾独老，天边风俗自相亲。</div>
   </div>
 </template>
 <script>

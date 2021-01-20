@@ -1,17 +1,23 @@
 const fs = require('fs')
 const path = require('path')
+const fileParser = require('node-html-parser').parse
 const less = require('less')
 const sass = require('node-sass')
 const renderStyl = require('./renderStyl')
 const css2json = require('css2json')
-const Fontmin = require('fontmin');
-const rename = require('gulp-rename');
+const Fontmin = require('fontmin')
+const rename = require('gulp-rename')
 
 let options = {
   option: null,
   set: function (val) {
     this.option = val
   }
+}
+
+let dataStore = {
+  collectTextStr: '',
+  styleVars: ''
 }
 
 async function travelFiles(basePath, ext, cb){
@@ -21,13 +27,15 @@ async function travelFiles(basePath, ext, cb){
     console.log("\033[41;30m ERROR \033[40;31m No " + ext + " file\033[0m")
     return
   }
+
   for (let i = 0; i < files.length; i++) {
     let filename = files[i]
     let filedir = path.join(filePath, filename)
     let fileStat = fs.statSync(filedir)
+
     if(fileStat.isFile()){
       if (path.extname(filedir) == ext) {
-        console.log('parsing file: ' + filename)
+        console.log('正在扫描: ' + filename)
         console.log("\033[1A\033[K\033[1A")
         var content = fs.readFileSync(filedir, 'utf-8')
         if (cb instanceof Promise) {
@@ -42,29 +50,75 @@ async function travelFiles(basePath, ext, cb){
   }
 }
 
-async function findFont (styleStr, styleVars, cb) {
+async function parseStyleVar () {
   let option = options.option
-  let rStr = styleVars + styleStr
 
-  if (rStr) {
+  if (option.preProcessor && option.styleVarDir) {
+    await travelFiles(option.basePath,`.${option.preProcessor}`, content => {
+      dataStore.styleVars = dataStore.styleVars + '\r\n' + content + '\r\n'
+    })
+  }
+}
+
+async function parseVueFile () {
+  let option = options.option
+
+  await travelFiles(option.basePath, '.vue', async function (content) {
+    let reContent = content.replace(/<style/g, '<new-style')
+      .replace(/<\/style>/g, '</new-style>')  // 替换style标签
+    let nodeTree = fileParser(reContent)
+    let styleText = ''
+
+    nodeTree.childNodes.forEach(node => {
+      if (node.tagName == 'new-style') {  // 处理style
+        if (!option.preProcessor) {
+          styleText += node.childNodes[0].rawText
+        } else if (option.preProcessor && node.rawAttrs.indexOf(option.preProcessor) > -1) {
+          styleText += node.childNodes[0].rawText
+        }
+      }
+    })
+
+    let styleStr = dataStore.styleVars + styleText
+
+    if (styleStr) {
+      await findFont(styleStr, key => {
+        let nodes = nodeTree.querySelectorAll(key)
+
+        if (nodes.length > 0) {
+          nodes.forEach(n => {
+            dataStore.collectTextStr += collectText(n)  // 收集使用新字体的文字
+          })
+        }
+      })
+    }
+  })
+
+}
+
+async function findFont (styleStr, cb) {
+  let option = options.option
+
+  if (styleStr) {
     let output
     let cssJson
+
     if (!option.preProcessor) {
-      cssJson = css2json(rStr)
+      cssJson = css2json(styleStr)
     } else {
       switch (option.preProcessor) {
         case 'less':
-          output = await less.render(rStr)
+          output = await less.render(styleStr)
           cssJson = css2json(output.css)
           break
         case 'scss':
           output = sass.renderSync({
-            data: rStr
+            data: styleStr
           })
           cssJson = css2json(output.css + '')
           break
         case 'styl':
-          output = renderStyl(rStr)
+          output = renderStyl(styleStr)
           cssJson = css2json(output)
           break
       }
@@ -78,11 +132,17 @@ async function findFont (styleStr, styleVars, cb) {
   }
 }
 
-function minFont (text, doneCb) {
+function minFont (doneCb) {
   let option = options.option
-
   let fontFilePath = option.fontFilePath
-  console.log('compressing......')
+  let rText = dataStore.collectTextStr.replace(/\r/g, '')
+    .replace(/\n/g, '').replace(/ /g, '')
+  var sText  =  [].filter.call(rText,(s,i,o)=>o.indexOf(s)==i).join('')  // 文字去重
+  if (option.showCollectText) {
+    console.log(`扫描到:\n\t${sText}`)
+  }
+
+  console.log('压缩中...')
   let fileName = path.basename(fontFilePath)
   let fileDir = fontFilePath.replace(fileName, '')
   fileDir = fileDir.substr(0, fileDir.length - 1)
@@ -100,9 +160,9 @@ function minFont (text, doneCb) {
     .dest(fileDir)
     .use(rename(fileName))
     .use(Fontmin.glyph({
-      text: text,
+      text: sText,
       hinting: false
-    }));
+    }))
 
   fontMin.run((err, files) => {
     if (err) {
@@ -112,7 +172,7 @@ function minFont (text, doneCb) {
     console.log("\033[1A\033[K\033[1A")
     console.log("\033[40;34m字体压缩完成\033[0m")
     doneCb()
-  });
+  })
 }
 
 function collectText (node) {
@@ -129,4 +189,9 @@ function collectText (node) {
   return str
 }
 
-module.exports = { options, travelFiles, collectText, findFont, minFont }
+module.exports = {
+  options,
+  parseStyleVar,
+  parseVueFile,
+  minFont
+}

@@ -1,7 +1,7 @@
 <template>
   <div class="box">
     <div class="title">这个是less文件</div>
-    <div class="content">微风v被我官方答复</div>
+    <div class="content">心关桂玉天难晓，运落风波梦亦惊。</div>
   </div>
 </template>
 <script>
