@@ -54,7 +54,7 @@ async function parseStyleVar () {
   let option = options.option
 
   if (option.preProcessor && option.styleVarDir) {
-    await travelFiles(option.basePath,`.${option.preProcessor}`, content => {
+    await travelFiles(option.styleVarDir,`.${option.preProcessor}`, content => {
       dataStore.styleVars = dataStore.styleVars + '\r\n' + content + '\r\n'
     })
   }
@@ -70,11 +70,18 @@ async function parseVueFile () {
     let styleText = ''
 
     nodeTree.childNodes.forEach(node => {
-      if (node.tagName == 'new-style') {  // 处理style
-        if (!option.preProcessor) {
+      let tagName = node.tagName || node.rawTagName
+
+      if (tagName && tagName.toLowerCase() == 'new-style') {
+        let isCssStyle = node.rawAttrs.indexOf('lang="css"') > -1 || node.rawAttrs.indexOf(`lang="`) == -1
+
+        if (option.preProcessor) {
+          if (isCssStyle || node.rawAttrs.indexOf(`lang="${option.preProcessor}`) > -1)
           styleText += node.childNodes[0].rawText
-        } else if (option.preProcessor && node.rawAttrs.indexOf(option.preProcessor) > -1) {
-          styleText += node.childNodes[0].rawText
+        } else {
+          if (isCssStyle) {
+            styleText += node.childNodes[0].rawText
+          }
         }
       }
     })

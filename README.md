@@ -1,11 +1,13 @@
-## font-snake 2.0
+# font-snake 2.0
 
-扫描vue项目压缩字体文件
-- 安装font-snake  
+扫描vue项目压缩TrueType字体文件
+
+## Usage
+- 安装font-snake
 ```shell script
 npm i font-snake --save-dev
 ```
-- 项目增加命令脚本 scripts/minFont.js
+- 添加命令脚本 scripts/minFont.js
 ```js
 const sss = require('font-snake')
 

@@ -12,4 +12,7 @@
   .box
     font-family: new-font
     background-color: $bgColor
+  .title {
+    color: red;
+  }
 </style>
