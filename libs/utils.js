@@ -132,7 +132,7 @@ async function findFont (styleStr, cb) {
     }
     for (let key in cssJson) {
       let item = cssJson[key]
-      if (item['font-family'] && item['font-family'] == option.fontName) {
+      if (item['font-family'] && (item['font-family'] == option.fontName || item['font-family'] == "'" + option.fontName + "'")) {
         cb(key)
       }
     }
