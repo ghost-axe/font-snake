@@ -15,7 +15,7 @@ let options = {
   fontName: 'new-font',  // 新字体的名字（font-family）
   fontFilePath: './src/assets/fonts/font2.ttf', // 字体文件路径（相对于项目根目录）
   basePath: './src/components',  // 扫描的目录
-  preProcessor: 'styl',  // css预处理器文件后缀，支持css, less, scss, sass, styl (不带".", 留空为css)
+  preProcessor: 'less',  // css预处理器文件后缀，支持css, less, scss, sass, styl (不带".", 留空为css)
   styleVarDir: './src/assets/style',  // css预处理器变量文件目录
   showCollectText: true   // 是否显示收集的去重文本
 }

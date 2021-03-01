@@ -1,6 +1,6 @@
 {
   "name": "font-snake",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "字蛇",
   "main": "index.js",
   "scripts": {

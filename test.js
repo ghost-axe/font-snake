@@ -4,7 +4,7 @@ let testOptions = {
   fontName: 'new-font',
   fontFilePath: 'fonts/font2.ttf',
   basePath: './src',
-  preProcessor: 'styl',
+  preProcessor: 'less',
   styleVarDir: './src/assets',
   showCollectText: true
 }
